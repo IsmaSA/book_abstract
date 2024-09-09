@@ -1,6 +1,6 @@
 
 # Project book of abstract NEOBIOTA & ICAIS
-## Code by: Sergio, Ismael, Fran & Miguel 
+## Code by: Sergio, Ismael
 Sys.time()
 
 suppressMessages({
