@@ -1,6 +1,6 @@
 
 # Project book of abstract NEOBIOTA & ICAIS
-## Code by: Sergio, Ismael
+## Code by: Sergio, Ismael, Fran & Miguel
 Sys.time()
 
 suppressMessages({
@@ -49,7 +49,7 @@ n <- neo[5]
 edition <- file.path(path ="./NEOBIOTA/", n)
 text <- pdf_text(edition)
 
-# !!! Its a scan so can i not mine it, extrat manually -- luckily they are few
+# !!! Its a scan so can i not mine it, extract manually -- luckily there are few
 
 
 
@@ -206,15 +206,262 @@ n <- neo[7]
 edition <- file.path(path ="./NEOBIOTA/", n)
 text <- pdf_text(edition)
 
-pattern <- "POSTER PRESENTATIONS\\n\\nSessions and Titles\\s*([\\s\\S]*)"
-poster <- str_extract(text, pattern)
+
+pattern <- "8th International Conference on Biological Invasions from understanding to action\n\n"
+
+abstracts <- strsplit(text, pattern, perl=TRUE)
+abstracts <- abstracts[nchar(abstracts) > 0]
+#abstracts <- sapply(abstracts, function(x) paste0(pattern, x), USE.NAMES = FALSE)
+
+i <- 163
+Style <- "Oral presentation"
+
+for(i in 1:length(abstracts)){
+  abs <- abstracts[[i]]
+  if( length(abs) >1 ) { 
+ abs1 <- abs[[2]]
+  } else { next }
+ part2 <- abs1
+ 
+ # Title
+ title <- str_extract(abs1, "^\\s*.*\n.*\n")
+ title <- str_replace_all(title, "\\s+", " ")
+ title <- str_trim(title)
+ 
+ if(title=="The Distribution of the Eastern Mosquitofish (Gambusia holbrooki) and Endemic Aphanius villwocki in the Upper Sakarya River Basin"){
+   Style <<- "Poster presentation"
+ }
+ 
+ 
+ # Extract authors and their indices
+ author1 <- str_replace_all(str_trim(abs1), "\\s+", " ")
+ author1 <- str_extract(author1, "\\b\\w+ \\w+(?=1)")
+ 
+ # Extract affiliations linked by indices
+ #affi <- str_extract_all(abs1, "\\d\\n.*\\n*.*(?=\\n\\d\\n|\\n\\n)", simplify = TRUE)
+ #affi <- vapply(affi, function(x) {
+ # str_replace_all(x, "\n", " ")
+ #}, character(1))[1]
+
+ #pat2 <- "(?<=1\\n)[\\s\\S]*?(?=e-mail|\\n\\n)"
+ #affi <- str_extract(abs1, pat2)
+ pattern <- "\\b(University|Center|Centre|Institute|Colegio|Univesity)\\b"  # to extract the affiliation ..
+ affi <- str_match(part2, pattern = sprintf(".*(%s[^\\n]*)", pattern))[1,2]
+ 
+ # Species:
+ pattern <- "(?<!\\.\\s)\\b[A-Z][a-z]{6,}\\s[a-z]{6,}\\b"
+ sp1 <- unlist(regmatches(part2, gregexpr(pattern, part2, perl = TRUE)))
+ sp1 <- paste(sp1, collapse = ", ")
+ 
+ all_sp <- unlist(regmatches(part2, gregexpr("\\b[A-Z][a-z]+\\s[a-z]+(?:\\s[a-z]+)?\\b", part2))) #usinig elza data
+ sp2 <- all_sp[all_sp %in% elza_sp]
+ sp2 <- paste(sp2, collapse = ", ")
+ 
+ # Terminology
+ terms <- str_extract_all(title, "Non-Native|naturalized|naturalised|nonindigenous|non-indigenous|allochthonous|invasive|invader|alien|exotic|non-native|nonnative|invasive alien|invasive non-native", simplify = FALSE)
+ terms <- unlist(terms)
+ terms <- unique(terms)
+ terms <- paste(terms, collapse = ", ")
+ 
+ 
+ data <- data.frame(Edition =n, Year = "2014", 
+                    Title = title, Abstract =part2, Author = author1,
+                    Affiliation = affi, Species =sp1, Species_elza =sp2, 
+                    Terminology = terms, Style = Style, Manually ="No", 
+                    Person_double_check = "NA")
+ 
+ res <- rbind(res, data)
+ res <- res %>% filter(!Title %in% c("ORAL PRESENTATIONS",'"NOT ATTENDED"',"POSTER PRESENTATIONS"))
+ print(i)
+}
 
 
-POSTER PRESENTATIONS & ORAL PRESENTATION
 
 
 
 
+# NEOBIOTA 9TH EDITION ----
+n <- neo[8]
+
+edition <- file.path(path ="./NEOBIOTA/", n)
+text <- pdf_text(edition)
+
+pattern <- "\\b(?:Mo|Tu|We|Th|Fr|Sa|Su)-?[A-Z]?\\d+-\\d+\\b"
+
+abstracts <- str_split(text, pattern)
+
+i <- 30
+Style <- "Oral presentation"
+
+for(i in 1:length(abstracts)){
+  abs <- abstracts[[i]]
+  abs1 <- abs
+  if( length(abs1) >1 ) { 
+    abs1 <- abs1[[2]]
+  } 
+  part2 <- abs1
+  
+  # Title
+  title1 <- str_extract(abs1, "^\\s*.*\n.*\n")
+  title <- str_replace_all(title1, "\\s+", " ")
+  title <- str_trim(title)
+  
+  if(!is.na(title) & title =="Poster presentations"){
+    Style <<- "Poster presentation" }
+  
+  if((grepl("^P-\\d+", title))) { 
+    title1 <- gsub("([][{}()+*^$\\|?.])", "\\\\\\1", title1)
+    remainder <- sub(title1, "", part2)
+  }  else {
+    remainder <- sub(title1, "", part2) 
+  }
+
+  author1 <- str_replace_all(str_trim(abs1), "\\s+", " ")
+  author1 <- str_extract(author1, "\\b\\w+ \\w+(?=1)")
+  
+
+  if(is.na(author1)){
+    author1 <- sub(",.*", "", remainder)  }
+  
+  #affi <- sub("^[^\n]*\n", "", remainder)
+  #affi <- sub("(.*?)(\\n).*", "\\1", affi)
+  pattern <- "\\b(University|Center|Centre|Institute|Colegio|Univesity)\\b"  # to extract the affiliation ..
+  affi <- str_match(part2, pattern = sprintf(".*(%s[^\\n]*)", pattern))[1,2]
+  
+  # Species:
+  pattern <- "(?<!\\.\\s)\\b[A-Z][a-z]{6,}\\s[a-z]{6,}\\b"
+  sp1 <- unlist(regmatches(part2, gregexpr(pattern, part2, perl = TRUE)))
+  sp1 <- paste(sp1, collapse = ", ")
+  
+  all_sp <- unlist(regmatches(part2, gregexpr("\\b[A-Z][a-z]+\\s[a-z]+(?:\\s[a-z]+)?\\b", part2))) #usinig elza data
+  sp2 <- all_sp[all_sp %in% elza_sp]
+  sp2 <- paste(sp2, collapse = ", ")
+  
+  # Terminology
+  terms <- str_extract_all(title, "Non-Native|naturalized|naturalised|nonindigenous|non-indigenous|allochthonous|invasive|invader|alien|exotic|non-native|nonnative|invasive alien|invasive non-native", simplify = FALSE)
+  terms <- unlist(terms)
+  terms <- unique(terms)
+  terms <- paste(terms, collapse = ", ")
+  
+  
+  data <- data.frame(Edition =n, Year = "2016", 
+                     Title = title, Abstract =part2, Author = author1,
+                     Affiliation = affi, Species =sp1, Species_elza =sp2, 
+                     Terminology = terms, Style = Style, Manually ="No", 
+                     Person_double_check = "NA")
+  
+  res <- rbind(res, data)
+  res <- res %>% filter(!Title %in% c("ORAL PRESENTATIONS",'"NOT ATTENDED"',"POSTER PRESENTATIONS"))
+  print(i)
+}
+
+
+
+
+
+# NEOBIOTA 10TH EDITION ----
+n <- neo[1]
+
+edition <- file.path(path ="./NEOBIOTA/", n)
+text <- pdf_text(edition)
+
+pattern <- "\\b[A-Za-z]+\\d+\\b"
+abstracts <- str_split(text, pattern)
+
+pattern <- "\\b[A-Za-z]+\\d+\\b"
+abstracts <- str_split(text, pattern, simplify = FALSE)
+
+i<- 61
+Style <- "Oral presentation"
+
+for(i in 1:length(abstracts)){
+  abs <- abstracts[[i]]
+  #abs1 <- paste(abs, collapse = " ")
+  #part2 <- abs1
+  
+  pattern <- "^\\n+.*"
+  papers <- abs[str_detect(abs, pattern)]
+
+  if(length(papers) <1 ) { next}
+  
+  count_words <- function(text) { str_count(text, "\\S+")  }
+  
+  combine_lines <- function(abs) {
+    combined <- c()
+    i <- 1
+    while (i <= length(abs)) {
+      if (count_words(abs[i]) < 150) {
+        if (i < length(abs)) {
+          combined <- c(combined, paste(abs[i], abs[i + 1], sep = " "))
+          i <- i + 2  
+        } else {
+          combined <- c(combined, abs[i])  
+          i <- i + 1
+        }
+      } else {
+        combined <- c(combined, abs[i])  
+        i <- i + 1 
+      } 
+    } 
+    return(combined) }
+  
+  papers2 <- combine_lines(papers)
+  
+  for(j in 1:length(papers2)){
+    papers3 <- papers2[[j]] 
+    part2 <- papers3 
+    # Title
+    title1 <- str_extract(papers3, "^\\s*.*\n.*\n")
+    title <- str_replace_all(title1, "\\s+", " ")
+    title <- str_trim(title)
+    
+    if(!is.na(title) & title =="The role of the invasive weed Panicum miliaceum in the epidemiology of cereal viruses Gyorgy Pasztor, Rita Szabo, Erzsébet Nadasy, Andras Takacs the autumn 2014 and 2015. After collection, the samples were"){
+      Style <<- "Poster presentation" }
+    
+    if((grepl("^P\\d+", title))) { 
+      title1 <- gsub("([][{}()+*^$\\|?.])", "\\\\\\1", title1)
+      remainder <- sub(title1, "", part2)
+    }  else {
+      remainder <- sub(title1, "", part2) 
+    }
+    
+    author1 <- str_replace_all(str_trim(remainder), "\\s+", " ")
+    author1 <- sub(",.*", "", author1)
+    
+    if(is.na(author1)){
+      author1 <- sub(",.*", "", remainder)  }
+    
+    pattern <- "\\b(University|Center|Centre|Institute|Colegio|Univesity)\\b"  # to extract the affiliation ..
+    affi <- str_match(part2, pattern = sprintf(".*(%s[^\\n]*)", pattern))[1,2]
+    
+    # Species:
+    pattern <- "(?<!\\.\\s)\\b[A-Z][a-z]{6,}\\s[a-z]{6,}\\b"
+    sp1 <- unlist(regmatches(part2, gregexpr(pattern, part2, perl = TRUE)))
+    sp1 <- paste(sp1, collapse = ", ")
+    
+    all_sp <- unlist(regmatches(part2, gregexpr("\\b[A-Z][a-z]+\\s[a-z]+(?:\\s[a-z]+)?\\b", part2))) #usinig elza data
+    sp2 <- all_sp[all_sp %in% elza_sp]
+    sp2 <- paste(sp2, collapse = ", ")
+    
+    # Terminology
+    terms <- str_extract_all(title, "Non-Native|naturalized|naturalised|nonindigenous|non-indigenous|allochthonous|invasive|invader|alien|exotic|non-native|nonnative|invasive alien|invasive non-native", simplify = FALSE)
+    terms <- unlist(terms)
+    terms <- unique(terms)
+    terms <- paste(terms, collapse = ", ")
+    
+    data <- data.frame(Edition =n, Year = "2018", 
+                       Title = title, Abstract =part2, Author = author1,
+                       Affiliation = affi, Species =sp1, Species_elza =sp2, 
+                       Terminology = terms, Style = Style, Manually ="No", 
+                       Person_double_check = "NA")
+    
+    res <- rbind(res, data)
+    res <- res %>% filter(!Title %in% c("ORAL PRESENTATIONS",'"NOT ATTENDED"',"POSTER PRESENTATIONS"))
+    print(i)
+  }
+}
+
+i <- 30
 
 
 
@@ -273,8 +520,3 @@ POSTER PRESENTATIONS & ORAL PRESENTATION
 
 
   
-  
-
-
-
-   
