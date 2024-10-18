@@ -1,6 +1,6 @@
 
-# Project book of abstract NEOBIOTA & ICAIS? 
-## Code by: Sergio, Ismael, Fran & Miguel
+# Project book of abstract NEOBIOTA & ICAIS
+## Code by: Sergio, Ismael, Fran
 Sys.time()
 
 install.packages("pacman")
@@ -295,8 +295,12 @@ for(i in 1:length(abstracts)) {
 # NEOBIOTA 6TH EDITION ----
 n <- neo[grep("6th", neo)]
 setwd("C:/Users/Propietario/Desktop/book_abstracts/NEOBIOTA/")
-pdf_images <- pdf_convert(n, dpi = 300)
+pdf_images <- pdf_convert(n, dpi = 700)
+image_viewer <- pdf_images[[22]]
+browseURL(image_viewer)
+
 eng <- tesseract()
+eng <- tesseract(options = list(tessedit_pageseg_mode = 6))  # Different page segmentation mode
 
 ocr_text <- lapply(pdf_images, function(image) {
   tesseract::ocr(image, engine = eng)
@@ -310,7 +314,7 @@ for(i in 1:length(ocr_text)){
   abs <- ocr_text[[i]]
   part2 <- abs
   
-  if( count_words(abs) < 150) { next }
+  if( count_words(abs) < 100) { next }
   
   # Title
   title1 <- str_extract(part2, "^\\s*.*\n.*\n")
@@ -621,48 +625,24 @@ n <- neo[grep("10th", neo)]
 edition <- file.path(path ="./NEOBIOTA/", n)
 text <- pdf_text(edition)
 
-pattern <- "\\b[A-Za-z]+\\d+\\b"
-abstracts <- str_split(text, pattern)
+pattern <- "(?i)(FP\\d+|P\\d+)"
+abstracts <- str_split(text, paste0(pattern, ".*?(?=", pattern, "|$)"), simplify = FALSE)
 
 pattern <- "\\b[A-Za-z]+\\d+\\b"
 abstracts <- str_split(text, pattern, simplify = FALSE)
 
-i<- 61
+i<- 87
 Style <- "Oral presentation"
 
 for(i in 1:length(abstracts)){
   abs <- abstracts[[i]]
-  #abs1 <- paste(abs, collapse = " ")
-  #part2 <- abs1
-  
-  pattern <- "^\\n+.*"
-  papers <- abs[str_detect(abs, pattern)]
+  pattern <- "(?i)(FP\\d+|P\\d+)"
+  abs1 <- unlist(str_split(abs, pattern))
 
-  if(length(papers) <1 ) { next}
-  
-  combine_lines <- function(abs) {
-    combined <- c()
-    i <- 1
-    while (i <= length(abs)) {
-      if (count_words(abs[i]) < 150) {
-        if (i < length(abs)) {
-          combined <- c(combined, paste(abs[i], abs[i + 1], sep = " "))
-          i <- i + 2  
-        } else {
-          combined <- c(combined, abs[i])  
-          i <- i + 1
-        }
-      } else {
-        combined <- c(combined, abs[i])  
-        i <- i + 1 
-      } 
-    } 
-    return(combined) }
-  
-  papers2 <- combine_lines(papers)
-  
-  for(j in 1:length(papers2)){
-    papers3 <- papers2[[j]] 
+  for(j in 1:length(abs1)){
+    papers3 <- abs1[[j]] 
+    if( count_words(papers3) < 15) { next }
+    
     part2 <- papers3 
     # Title
     title1 <- str_extract(papers3, "^\\s*.*\n.*\n")
@@ -671,6 +651,8 @@ for(i in 1:length(abstracts)){
     
     if(!is.na(title) & title =="The role of the invasive weed Panicum miliaceum in the epidemiology of cereal viruses Gyorgy Pasztor, Rita Szabo, Erzsébet Nadasy, Andras Takacs the autumn 2014 and 2015. After collection, the samples were"){
       Style <<- "Poster presentation" }
+    
+    if(grepl("NNEXT", title) ) { next } 
     
     if((grepl("^P\\d+", title))) { 
       title1 <- gsub("([][{}()+*^$\\|?.])", "\\\\\\1", title1)
